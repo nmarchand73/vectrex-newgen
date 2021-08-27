@@ -1,9 +1,21 @@
 var romList=
 {
 	"Academy 2021":[
-		"Frog Jump_by SpaceInvader7",
+		"Blackjack_by Insomnia",
+		"Instigator_by Racoon",
+		"The Heist For The Ultimate Sandwich_by Nosemany",
+		"Arcade Puzzle_by Mr. G00DY34R",
+		"Catch Your Parcels_by Pac-Man",
+		"Get The Beer_by literally",
+		"Get That Gold_by 8bits1byte",
+		"Invasion_by Cargo",
+		"Galactica_by Vega",
+		"Darts_by Firewall",
+		"Pongmania_by BUG",
 		"Racetrex_by Chroma",
-		"Darts_Beta RC by Firewall"
+		"Tank Attack_by Innogamic",
+		"Frog Jump_by SpaceInvader7",
+		"Don't Break My Heart_by Dr. Runtime Terror"
 	],
 	/*
 		"http://www.clockworkrobot.com/wp-content/uploads/2018/12/ChimneyHunt.zip",
