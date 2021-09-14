@@ -54,7 +54,7 @@ function switchRom(rom) {
 }
 function loadRom(url) {
   lastURL = url;
-  loadBinary(url, function(e) {
+    loadBinary(url, function(e) {
     doinit(); // very late
     var data = e.target.response;
     // do we have a zip?
@@ -582,6 +582,7 @@ function addHead(tag, txt, cb) {
 function xhr(src, cb) {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", src, true);
+  xhr.overrideMimeType('text/plain; charset=x-user-defined');
   xhr.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       //log(this.responseText);
