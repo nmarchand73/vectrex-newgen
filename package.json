@@ -16,14 +16,13 @@
     "gulp-concat": "^2.6.1",
     "gulp-htmlmin": "^5.0.1",
     "gulp-imagemin": "^6.2.0",
+    "gulp-terser": "^2.0.1",
     "gulp-uglify": "^3.0.2",
     "imagemin-giflossy": "^5.1.10",
     "imagemin-mozjpeg": "^8.0.0",
     "imagemin-pngquant": "^8.0.0",
     "imagemin-zopfli": "^6.0.0",
-    "gulp-terser": "^2.0.1",
     "regpack": "^5.0.1",
     "through2": "^4.0.2"
-  },
-  "dependencies": {}
+  }
 }
