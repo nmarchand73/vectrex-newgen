@@ -132,6 +132,9 @@ commercial Vectrex roms, they were made available for non-commercial use in the 
 
 ## Change Log
 
+### 05/21/21 (0.6.2) (DrSnuggles)
+    - Finally found FF worker problem (Thanks to hcmffm for report)
+
 ### 05/21/21 (0.6.1) (DrSnuggles)
     - Recorder (press F9 to start/stop)
 
