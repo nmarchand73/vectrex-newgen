@@ -1,5 +1,20 @@
 var romList=
 {
+	"Academy 2022":[ // http://eitidaten.fh-pforzheim.de/daten/mitarbeiter/johannsen/vectrex_2022/gallery/vectrex_gallery_2022.htm
+		"Rescue Mission_by ZeroOne",
+		"VectrEXIT_by SecretName",
+		"Space Shooter_by turing",
+		"Road Runner_by T.Flops",
+		"Grain Sling_by Kiddo",
+		"Save The Planet_by RubberDuck",
+		"Evasive_by CaptainObvious",
+		"Bubble Splitter_by WoodPeaker",
+		"The Count_by Peer Johannsen_Beta RC 1-0", // Beta RC version 1-0 http://eitidaten.fh-pforzheim.de/daten/mitarbeiter/johannsen/vectrex_lab/projects/the_count/the_count.htm
+		//"Space Shooter_by turing_http://eitidaten.fh-pforzheim.de%2Fdaten%2Fmitarbeiter%2Fjohannsen%2Fvectrex_2022%2Fdownload%2Fspace_shooter.zip",
+		//"Road Runner_by T.Flops_http://eitidaten.fh-pforzheim.de%2Fdaten%2Fmitarbeiter%2Fjohannsen%2Fvectrex_2022%2Fdownload%2Froad_runner_32.zip",
+		//"Grain Sling_by Kiddo_http://eitidaten.fh-pforzheim.de%2Fdaten%2Fmitarbeiter%2Fjohannsen%2Fvectrex_2022%2Fdownload%2Fgrain_sling.zip",
+		//"Save The Planet_by RubberDuck_http://eitidaten.fh-pforzheim.de%2Fdaten%2Fmitarbeiter%2Fjohannsen%2Fvectrex_2022%2Fdownload%2Fsave_the_planet.zip",
+	],
 	"Academy 2021":[
 		"Blackjack_by Insomnia",
 		"Instigator_by Racoon",
