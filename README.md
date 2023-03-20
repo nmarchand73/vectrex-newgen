@@ -132,6 +132,9 @@ commercial Vectrex roms, they were made available for non-commercial use in the 
 
 ## Change Log
 
+### 03/20/23 (0.6.3) (DrSnuggles)
+	- Feature request by Vectrexer / Bug fix: additional URL parameters after rom=... prevented loading
+
 ### 05/21/21 (0.6.2) (DrSnuggles)
     - Finally found FF worker problem (Thanks to hcmffm for report)
 

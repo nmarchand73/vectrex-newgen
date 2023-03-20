@@ -1164,6 +1164,7 @@ function resumeLastSaveState() {
   // look above var rom = getUrlParameter('rom');//urlParams.get('rom');
   if (rom) {
     rom = location.search.substr(location.search.indexOf("rom=")+4);
+	rom = rom.split('&')[0]; // feature request by Vectrexer (2023-03-20) [bug fix]
     if (rom.indexOf("//") > -1) {
       // set quicklink
       quicklink.title = "https://DrSnuggles.github.io/jsvecx?rom="+ rom;
