@@ -41,7 +41,8 @@ svg.i {
 }
 
 /* game stage */
-#wrapper { position: relative; }
+/* positioned by resizer(); absolute so its full-width box does not push the page sideways */
+#wrapper { position: absolute; width: 0; height: 0; }
 #vecscr { position: absolute; }
 #vecscr.mirrored, #overlay.mirrored, #vecscr.mirrored + #crt { -webkit-transform: scale(-1, -1); transform: scale(-1, -1); }
 /* the CRT pass is drawn in #crt; #vecscr keeps rendering underneath (it still takes the mouse) */

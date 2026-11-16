@@ -17,6 +17,8 @@ function osint()
     this.screen_y = 0;
     //static long scl_factor;
     this.scl_factor = 0;
+    this.off_x = 0; // centring of the picture in the canvas
+    this.off_y = 0;
     //static DWORD color_set[VECTREX_COLORS];
     //this.color_set = new Array(Globals.VECTREX_COLORS);
 
@@ -28,18 +30,12 @@ function osint()
 
     this.osint_updatescale = function()
     {
-        //long sclx, scly;
-        var sclx = Globals.ALG_MAX_X / this.screen_x >> 0; // raz
-        var scly = Globals.ALG_MAX_Y / this.screen_y >> 0; // raz
-
-        if( sclx > scly )
-        {
-            this.scl_factor = sclx;
-        }
-        else
-        {
-            this.scl_factor = scly;
-        }
+        // Exact fit, not the original integer division: with a scale of 24 instead of 24.96 the picture was 4% too big
+        // and anchored top left, so it looked pushed to the right and down and cropped. The leftover (the canvas
+        // aspect is rounded to whole pixels) is split evenly so the picture is centred.
+        this.scl_factor = Math.max(Globals.ALG_MAX_X / this.screen_x, Globals.ALG_MAX_Y / this.screen_y);
+        this.off_x = (this.screen_x - Globals.ALG_MAX_X / this.scl_factor) / 2;
+        this.off_y = (this.screen_y - Globals.ALG_MAX_Y / this.scl_factor) / 2;
     }
 
     //static int osint_defaults (void)
@@ -362,6 +358,7 @@ function osint()
         // lCOLOR,x0,y0,x1,y1 } should combine that again
         this.actImg = []; // clear
         // the beam adds light: where vectors join or cross the spot is brighter, like on the tube
+        ctx.setTransform(1, 0, 0, 1, this.off_x, this.off_y);
         ctx.globalCompositeOperation = "lighter";
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
@@ -400,6 +397,7 @@ function osint()
           ctx.stroke();
         }
 
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalCompositeOperation = "source-over";
         //this.ctx.putImageData(this.imageData, 0, 0);
 

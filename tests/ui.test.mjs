@@ -239,3 +239,37 @@ test('CRT instability is adjustable, remembered, and off at zero', async () => {
   await page.locator('#instab_slider').fill('0.5');
   await page.evaluate(() => document.getElementById('menu').style.display === 'block' && toggleMenu());
 });
+
+// Regression: the vector picture used an integer scale (24 instead of 24.96 on a retina screen), which made it 4%
+// too big, anchored top left, so it sat to the right of the overlay window and was cropped.
+test('the picture fills the screen exactly and is centred, at any window size and pixel ratio', async () => {
+  for (const [w, h, dsf] of [[1440, 900, 2], [1920, 1080, 1], [1280, 720, 1.5], [900, 1000, 1]]) {
+    const p = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: dsf });
+    await p.goto(`${base}/dev.html?rom=Commercial/Star_Castle_1983`.replace('Star_Castle', 'Star Castle'));
+    await p.waitForFunction(() => vecx.osint.ctx && vecscr.width > 300);
+    const g = await p.evaluate(() => {
+      const o = vecx.osint;
+      const ov = document.getElementById('overlay').getBoundingClientRect();
+      const sc = vecscr.getBoundingClientRect();
+      return {
+        spanX: Globals.ALG_MAX_X / o.scl_factor,
+        spanY: Globals.ALG_MAX_Y / o.scl_factor,
+        w: vecscr.width,
+        h: vecscr.height,
+        offX: o.off_x,
+        offY: o.off_y,
+        dx: (sc.left + sc.width / 2) - (ov.left + ov.width / 2),
+        dpage: (ov.left + ov.width / 2) - innerWidth / 2,
+        overflow: document.documentElement.scrollWidth - innerWidth,
+      };
+    });
+    await p.close();
+    const tag = `${w}x${h}@${dsf}`;
+    assert.ok(Math.abs(g.spanX - g.w) <= 1.5 || Math.abs(g.spanY - g.h) <= 1.5, `${tag}: picture spans the canvas (${g.spanX.toFixed(1)}x${g.spanY.toFixed(1)} in ${g.w}x${g.h})`);
+    assert.ok(g.spanX <= g.w + 0.01 && g.spanY <= g.h + 0.01, `${tag}: picture is not cropped`);
+    assert.ok(Math.abs(g.offX) <= 1.5 && Math.abs(g.offY) <= 1.5, `${tag}: picture is centred (offsets ${g.offX.toFixed(2)}, ${g.offY.toFixed(2)})`);
+    assert.ok(Math.abs(g.dx) <= 1, `${tag}: screen is centred in the overlay (${g.dx.toFixed(2)}px)`);
+    assert.ok(Math.abs(g.dpage) <= 1, `${tag}: overlay is centred in the window (${g.dpage.toFixed(2)}px)`);
+    assert.ok(g.overflow <= 0, `${tag}: the page does not overflow sideways (${g.overflow}px)`);
+  }
+});
