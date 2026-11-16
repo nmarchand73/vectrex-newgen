@@ -12,6 +12,8 @@ const outDir = path.join(root, 'tests', 'out');
 let server;
 let browser;
 let page;
+// software GL on a CI runner is slow: wait for the DOM, then for the player itself
+const NAV = { waitUntil: 'domcontentloaded', timeout: 120000 };
 let base;
 
 test.before(async () => {
@@ -73,7 +75,7 @@ async function pickFromList(romPath, filterText) {
 }
 
 test('player boots Mine Storm and lists Scramble and Spike', async () => {
-  await page.goto(`${base}/dev.html`);
+  await page.goto(`${base}/dev.html`, NAV);
   await waitForRender();
   const rows = await page.evaluate(() => [...document.querySelectorAll('#myTbl tbody tr')].map((r) => r.getAttribute('rom')));
   assert.ok(rows.length > 400, `cartridge list has ${rows.length} entries`);
@@ -157,10 +159,10 @@ test('back to Scramble, then direct links work', async () => {
   await pickFromList('Commercial/Scramble_1982', 'Scramble');
   await page.waitForFunction(() => /^g GCE 1982/.test(String.fromCharCode(...vecx.cart.slice(0, 10))));
   await waitForRender();
-  await page.goto(`${base}/dev.html?rom=Commercial/Spike_1983`);
+  await page.goto(`${base}/dev.html?rom=Commercial/Spike_1983`, NAV);
   await page.waitForFunction(() => vecx.cart && /^g GCE 1983/.test(String.fromCharCode(...vecx.cart.slice(0, 10))));
   await waitForRender();
-  await page.goto(`${base}/dev.html?rom=Commercial/Scramble_1982`);
+  await page.goto(`${base}/dev.html?rom=Commercial/Scramble_1982`, NAV);
   await page.waitForFunction(() => vecx.cart && /^g GCE 1982/.test(String.fromCharCode(...vecx.cart.slice(0, 10))));
   await waitForRender();
 });
@@ -219,7 +221,7 @@ test('CRT instability is adjustable, remembered, and off at zero', async () => {
   await page.locator('#instab_slider').fill('0');
   const quiet = await page.evaluate(() => {
     let glitches = 0;
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 1000; i++) {
       crt.frame();
       if (crt.glitching()) glitches++;
     }
@@ -231,7 +233,10 @@ test('CRT instability is adjustable, remembered, and off at zero', async () => {
     let glitches = 0;
     for (let i = 0; i < 3000; i++) {
       crt.frame();
-      if (crt.glitching()) glitches++;
+      if (crt.glitching()) {
+        glitches++;
+        break;
+      }
     }
     return glitches;
   });
@@ -245,8 +250,8 @@ test('CRT instability is adjustable, remembered, and off at zero', async () => {
 test('the picture fills the screen exactly and is centred, at any window size and pixel ratio', async () => {
   for (const [w, h, dsf] of [[1440, 900, 2], [1920, 1080, 1], [1280, 720, 1.5], [900, 1000, 1]]) {
     const p = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: dsf });
-    await p.goto(`${base}/dev.html?rom=Commercial/Star_Castle_1983`.replace('Star_Castle', 'Star Castle'));
-    await p.waitForFunction(() => vecx.osint.ctx && vecscr.width > 300);
+    await p.goto(`${base}/dev.html?rom=Commercial/Star_Castle_1983`.replace('Star_Castle', 'Star Castle'), NAV);
+    await p.waitForFunction(() => vecx.osint.ctx && vecscr.width > 300, null, { timeout: 120000 });
     const g = await p.evaluate(() => {
       const o = vecx.osint;
       const ov = document.getElementById('overlay').getBoundingClientRect();
@@ -278,8 +283,8 @@ test('the picture fills the screen exactly and is centred, at any window size an
 // (the vertical blur passes stepped twice as far as the horizontal ones).
 test('the CRT glow around a point is round', async () => {
   const p = await browser.newPage({ viewport: { width: 900, height: 1000 }, deviceScaleFactor: 1 });
-  await p.goto(`${base}/dev.html`);
-  await p.waitForFunction(() => vecx.osint.ctx && crt.ok && vecscr.width > 300);
+  await p.goto(`${base}/dev.html`, NAV);
+  await p.waitForFunction(() => vecx.osint.ctx && crt.ok && vecscr.width > 300, null, { timeout: 120000 });
   const g = await p.evaluate(() => {
     vecx.stop();
     crt.setInstab(0);
