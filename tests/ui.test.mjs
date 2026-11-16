@@ -273,3 +273,50 @@ test('the picture fills the screen exactly and is centred, at any window size an
     assert.ok(g.overflow <= 0, `${tag}: the page does not overflow sideways (${g.overflow}px)`);
   }
 });
+
+// Regression: the glow around a point used to be an ellipse, 2-3x stronger vertically than horizontally
+// (the vertical blur passes stepped twice as far as the horizontal ones).
+test('the CRT glow around a point is round', async () => {
+  const p = await browser.newPage({ viewport: { width: 900, height: 1000 }, deviceScaleFactor: 1 });
+  await p.goto(`${base}/dev.html`);
+  await p.waitForFunction(() => vecx.osint.ctx && crt.ok && vecscr.width > 300);
+  const g = await p.evaluate(() => {
+    vecx.stop();
+    crt.setInstab(0);
+    document.getElementById('overlay').classList.add('fadeOut'); // no colour filter
+    const ctx = vecx.osint.ctx;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, vecscr.width, vecscr.height);
+    const cx = Math.round(vecscr.width / 2);
+    const cy = Math.round(vecscr.height / 2);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2, 0, 7);
+    ctx.fill();
+    crt.frame();
+    const c = document.getElementById('crt');
+    const t = document.createElement('canvas');
+    t.width = c.width;
+    t.height = c.height;
+    const x = t.getContext('2d');
+    x.drawImage(c, 0, 0);
+    const d = x.getImageData(0, 0, t.width, t.height).data;
+    const lum = (px, py) => d[(py * t.width + px) * 4 + 1];
+    const out = {};
+    for (const r of [8, 12, 20]) {
+      // average of the four directions on each axis, so a tiny offset of the dot does not matter
+      out[r] = {
+        h: (lum(cx + r, cy) + lum(cx - r, cy)) / 2,
+        v: (lum(cx, cy + r) + lum(cx, cy - r)) / 2,
+      };
+    }
+    return out;
+  });
+  await p.close();
+  for (const r of Object.keys(g)) {
+    const ratio = g[r].v / g[r].h;
+    assert.ok(ratio > 0.8 && ratio < 1.25, `glow at ${r}px is round: horizontal ${g[r].h}, vertical ${g[r].v}`);
+  }
+});

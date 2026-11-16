@@ -283,13 +283,16 @@ var crt = (function(){
     gl.bindTexture(gl.TEXTURE_2D, srcTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
 
+    // Each level blurs by the same distance horizontally and vertically: one texel of the level it comes from. (The
+    // vertical pass used to step by a texel of the smaller level, twice as far: the halo was an ellipse, 2-3x taller
+    // than wide.) Both steps are in uv units, and canvas pixels are square.
     var first = levels[0];
     blur(srcTex, first.a, 1 / texW, 0);
-    blur(first.a, first.b, 0, 1 / first.a.h);
+    blur(first.a, first.b, 0, 1 / texH);
     for (var i = 1; i < levels.length; i++) {
       var prev = levels[i - 1].b;
       blur(prev, levels[i].a, 1 / prev.w, 0);
-      blur(levels[i].a, levels[i].b, 0, 1 / levels[i].a.h);
+      blur(levels[i].a, levels[i].b, 0, 1 / prev.h);
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
