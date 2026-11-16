@@ -182,7 +182,7 @@ const crtStats = () => page.evaluate(() => {
     if (v > 600) bright++;
     else if (v > 60) halo++;
   }
-  return { bright, halo, shown: getComputedStyle(c).display !== 'none', srcHidden: getComputedStyle(vecscr).opacity === '0', ok: crt.ok };
+  return { bright, halo, shown: getComputedStyle(c).display !== 'none', srcHidden: getComputedStyle(vecscr).filter === 'brightness(0)', ok: crt.ok };
 });
 
 test('the CRT pass draws the beam with a halo and can be switched off', async () => {
@@ -201,9 +201,9 @@ test('the CRT pass draws the beam with a halo and can be switched off', async ()
   await page.locator('#btnCRT').click();
   await page.waitForTimeout(100); // the tile state refreshes right after the click
   assert.equal(await page.locator('#btnCRT').getAttribute('aria-pressed'), 'false');
-  const off = await page.evaluate(() => ({ crtShown: getComputedStyle(document.getElementById('crt')).display !== 'none', src: getComputedStyle(vecscr).opacity }));
+  const off = await page.evaluate(() => ({ crtShown: getComputedStyle(document.getElementById('crt')).display !== 'none', src: getComputedStyle(vecscr).filter }));
   assert.equal(off.crtShown, false);
-  assert.equal(off.src, '1');
+  assert.equal(off.src, 'none');
   await page.locator('#btnCRT').click(); // the choice is remembered, turn it back on
   await page.waitForTimeout(100);
   assert.equal(await page.locator('#btnCRT').getAttribute('aria-pressed'), 'true');

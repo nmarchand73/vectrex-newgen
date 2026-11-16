@@ -21,7 +21,10 @@ the other bundled cartridges, are simply read and played. Two changes to the emu
 - **CRT look** (`src/js/crt.js`, on by default, **CRT** tile and **CRT glow** slider in the menu). The vector canvas
   is drawn additively with a beam that swells with intensity, then a WebGL pass adds halation in three radii, a
   slightly domed glass, darker corners, a faint reflection, lifted blacks and a little phosphor sparkle. There are
-  deliberately no scanlines or shadow mask: the Vectrex tube is a vector display and has neither. The **CRT instability** slider adds analog
+  deliberately no scanlines or shadow mask: the Vectrex tube is a vector display and has neither. The overlay is a
+  coloured filter in front of the tube, as in real life: the beam shines through it, so a white line behind a yellow
+  band is a yellow line and the glow carries the colour of the plastic. The shader reads the overlay picture and the
+  light is added on top of it. The **CRT instability** slider adds analog
   wobble: slow deflection drift and line-by-line shimmer, the image breathing with the load on the high voltage, a
   rolling hum band, and an occasional brief sideways tear (0 switches all of it off).
 

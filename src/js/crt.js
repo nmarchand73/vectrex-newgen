@@ -8,6 +8,10 @@
 //   - a slightly domed face plate: gentle barrel distortion, darker corners, rounded visible area
 //   - a faint glass reflection and a lifted black level (a lit tube never shows pure black)
 //   - a little phosphor sparkle
+//   - the overlay: the coloured plastic sheet sits in front of the tube and the beam shines THROUGH it. A white line
+//     behind a yellow band is a yellow line, and the halo spreads the colour of the plastic it lands in. So the
+//     overlay is sampled here and used as a filter on the light, and the light is added on top of the overlay
+//     (CSS mix-blend-mode: screen), instead of the overlay being painted over a white picture.
 //   - analog instability (slider): the deflection drifts and shimmers, the image breathes with the load on the high
 //     voltage, a hum band rolls through the brightness and now and then the picture tears sideways for a moment
 //
@@ -27,6 +31,12 @@ var crt = (function(){
   var progBlur = null;
   var progFinal = null;
   var srcTex = null;
+  var ovTex = null;
+  var ovOk = false;
+  var overlayEl = null;
+  // the screen canvas covers this part of the overlay picture (see resizer() in seamless.js)
+  var OV_SCALE_X = 330 / 351;
+  var OV_SCALE_Y = 410 / 449;
   var levels = [];      // [{ w, h, a, b }] ping-pong pairs at 1/2, 1/4, 1/8
   var texW = 0;
   var texH = 0;
@@ -51,8 +61,9 @@ var crt = (function(){
 
   var FRAG_FINAL = PREC +
     "varying vec2 uv;" +
-    "uniform sampler2D uS, uB1, uB2, uB3;" +
-    "uniform float uTime, uGlow, uInstab, uFlick, uGlitch, uGlitchY;" +
+    "uniform sampler2D uS, uB1, uB2, uB3, uOv;" +
+    "uniform float uTime, uGlow, uInstab, uFlick, uGlitch, uGlitchY, uOvOn;" +
+    "uniform vec2 uOvK;" +
     "uniform vec2 uJit;" +
     "float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }" +
     // smooth 1D noise, in [0, 1]
@@ -73,6 +84,16 @@ var crt = (function(){
     // now and then the picture tears sideways for a moment
     "  float band = smoothstep(0.0, 1.0, 1.0 - abs(p.y - uGlitchY) * 5.0);" +
     "  p.x += uGlitch * band * 0.018 * I;" +
+    // the overlay in front of this spot of the tube: a gel that filters the light, printed art that blocks it
+    "  vec4 ov = texture2D(uOv, (uv - 0.5) * uOvK + 0.5);" +
+    "  float oa = ov.a * uOvOn;" +
+    "  float mx = max(max(ov.r, ov.g), max(ov.b, 0.004));" +
+    "  vec3 hue = ov.rgb / mx;" +
+    "  float tint = smoothstep(0.02, 0.12, oa);" +
+    "  float lightPass = 1.0 - 0.85 * smoothstep(0.55, 0.95, oa);" +
+    // the white-hot core stays whiter than the halo, which carries the full colour of the plastic
+    "  vec3 tCore = mix(mix(vec3(1.0), hue * (0.55 + 0.45 * mx), tint), vec3(1.0), 0.3) * lightPass;" +
+    "  vec3 tHalo = mix(vec3(1.0), hue * (0.7 + 0.3 * mx), tint) * lightPass;" +
     // domed face plate
     "  vec2 w = p * vec2(1.0 + p.y * p.y * 0.016, 1.0 + p.x * p.x * 0.014);" +
     "  vec2 u = w * 0.5 + 0.5;" +
@@ -81,13 +102,13 @@ var crt = (function(){
     "  vec3 h2 = texture2D(uB2, u).rgb;" +
     "  vec3 h3 = texture2D(uB3, u).rgb;" +
     // beam: white-hot core, cool halation in three radii
-    "  vec3 col = core * vec3(0.97, 0.99, 1.0);" +
-    "  col += uGlow * (h1 * vec3(0.55, 0.78, 1.0) * 1.3 + h2 * vec3(0.38, 0.62, 1.0) * 1.1 + h3 * vec3(0.28, 0.50, 0.95) * 0.9);" +
+    "  vec3 col = core * vec3(0.97, 0.99, 1.0) * tCore;" +
+    "  col += uGlow * (h1 * vec3(0.55, 0.78, 1.0) * 1.3 + h2 * vec3(0.38, 0.62, 1.0) * 1.1 + h3 * vec3(0.28, 0.50, 0.95) * 0.9) * tHalo;" +
     // lit tube: lifted blacks, a bit of the picture's own light everywhere
     "  float r2 = dot(w, w);" +
     "  float vig = 1.0 - 0.30 * r2 * r2 * 0.5 - 0.10 * r2;" +
     "  vec3 haze = vec3(0.009, 0.012, 0.017) + h3 * vec3(0.05, 0.09, 0.16) * uGlow;" +
-    "  col += haze;" +
+    "  col += haze * tHalo;" +
     // glass reflection from a window up and to the left
     "  vec2 q = w - vec2(-0.55, 0.62);" +
     "  float spot = exp(-dot(q * vec2(1.0, 1.3), q * vec2(1.0, 1.3)) * 2.2);" +
@@ -196,7 +217,11 @@ var crt = (function(){
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     srcTex = texture(0, 0);
-    src.parentNode.insertBefore(c, src.nextSibling);
+    ovTex = texture(0, 0);
+    // above the overlay: the light is added on top of the plastic (mix-blend-mode: screen in modern.css)
+    overlayEl = document.getElementById("overlay");
+    var anchor = overlayEl || src;
+    anchor.parentNode.insertBefore(c, anchor.nextSibling);
     my.canvas = c;
     return true;
   }
@@ -232,6 +257,22 @@ var crt = (function(){
     return glitch > 0;
   };
 
+  // the overlay picture as a texture, whenever a new one has loaded
+  function uploadOverlay() {
+    ovOk = false;
+    if (!gl || !overlayEl || !overlayEl.naturalWidth) return;
+    try {
+      gl.activeTexture(gl.TEXTURE4);
+      gl.bindTexture(gl.TEXTURE_2D, ovTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, overlayEl);
+      ovOk = true;
+    } catch (e) {
+      // a page opened from file:// taints the image: no colour filtering then, white beam as before
+      console.warn("CRT: overlay not readable, beam stays white", e);
+    }
+    my.frame();
+  }
+
   // one display refresh: upload the vector canvas, blur it three times, composite
   my.frame = function () {
     if (!my.on || !my.ok || !src.width || !src.height) return;
@@ -261,6 +302,12 @@ var crt = (function(){
       gl.bindTexture(gl.TEXTURE_2D, units[u]);
       gl.uniform1i(gl.getUniformLocation(progFinal, names[u]), u);
     }
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, ovTex);
+    gl.uniform1i(gl.getUniformLocation(progFinal, "uOv"), 4);
+    var ovOn = ovOk && overlayEl && !overlayEl.classList.contains("fadeOut") ? 1 : 0;
+    gl.uniform1f(gl.getUniformLocation(progFinal, "uOvOn"), ovOn);
+    gl.uniform2f(gl.getUniformLocation(progFinal, "uOvK"), OV_SCALE_X, OV_SCALE_Y);
     gl.uniform1f(gl.getUniformLocation(progFinal, "uTime"), (performance.now() - t0) / 1000);
     gl.uniform1f(gl.getUniformLocation(progFinal, "uGlow"), my.glow);
     stir();
@@ -357,6 +404,10 @@ var crt = (function(){
         var stat = document.getElementById("stat");
         if (stat) stat.innerText = "Glow: " + (+e.target.value).toFixed(2);
       }, false);
+    }
+    if (my.ok && overlayEl) {
+      overlayEl.addEventListener("load", uploadOverlay, false);
+      uploadOverlay();
     }
     var wantsOn = (stored === null) ? true : stored === "1";
     my.set(wantsOn, false);
