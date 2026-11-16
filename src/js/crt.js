@@ -92,8 +92,10 @@ var crt = (function(){
     "  float tint = smoothstep(0.02, 0.12, oa);" +
     "  float lightPass = 1.0 - 0.85 * smoothstep(0.55, 0.95, oa);" +
     // the white-hot core stays whiter than the halo, which carries the full colour of the plastic
-    "  vec3 tCore = mix(mix(vec3(1.0), hue * (0.55 + 0.45 * mx), tint), vec3(1.0), 0.3) * lightPass;" +
-    "  vec3 tHalo = mix(vec3(1.0), hue * (0.7 + 0.3 * mx), tint) * lightPass;" +
+    // a real gel passes its own colour and almost nothing else: sharpen the hue so no blue leaks through red
+    "  vec3 gel = hue * hue;" +
+    "  vec3 tCore = mix(mix(vec3(1.0), gel, tint), vec3(1.0), 0.18) * lightPass;" +
+    "  vec3 tHalo = mix(vec3(1.0), gel, tint) * lightPass;" +
     // domed face plate
     "  vec2 w = p * vec2(1.0 + p.y * p.y * 0.016, 1.0 + p.x * p.x * 0.014);" +
     "  vec2 u = w * 0.5 + 0.5;" +
@@ -109,11 +111,15 @@ var crt = (function(){
     "  float vig = 1.0 - 0.30 * r2 * r2 * 0.5 - 0.10 * r2;" +
     "  vec3 haze = vec3(0.009, 0.012, 0.017) + h3 * vec3(0.05, 0.09, 0.16) * uGlow;" +
     "  col += haze * tHalo;" +
+    // the plastic itself glows with the light of the tube behind it, in its own colour: a little all the time,
+    // more where the picture is bright
+    "  float tube = dot(h3, vec3(0.33));" +
+    "  col += tint * gel * (0.075 + 2.2 * tube) * uGlow * lightPass;" +
     // glass reflection from a window up and to the left
     "  vec2 q = w - vec2(-0.55, 0.62);" +
     "  float spot = exp(-dot(q * vec2(1.0, 1.3), q * vec2(1.0, 1.3)) * 2.2);" +
     "  float sweep = smoothstep(0.15, 1.2, dot(w, normalize(vec2(-0.55, 0.85))));" +
-    "  col += vec3(0.78, 0.86, 1.0) * (spot * 0.040 + sweep * 0.014);" +
+    "  col += vec3(0.78, 0.86, 1.0) * (spot * 0.018 + sweep * 0.006) * (1.0 - 0.8 * tint);" +
     "  col *= vig;" +
     // phosphor sparkle (only where there is light)
     "  float n = hash(gl_FragCoord.xy + fract(uTime * 0.37) * vec2(113.0, 71.0));" +

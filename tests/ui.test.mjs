@@ -181,9 +181,10 @@ const crtStats = () => page.evaluate(() => {
   let bright = 0;
   let halo = 0;
   for (let i = 0; i < d.length; i += 4) {
-    const v = d[i] + d[i + 1] + d[i + 2];
-    if (v > 600) bright++;
-    else if (v > 60) halo++;
+    // a beam seen through a coloured gel is saturated (yellow, red, green), so judge it by its strongest channel
+    const hi = Math.max(d[i], d[i + 1], d[i + 2]);
+    if (hi > 200) bright++;
+    else if (hi > 40) halo++;
   }
   return { bright, halo, shown: getComputedStyle(c).display !== 'none', srcHidden: getComputedStyle(vecscr).filter === 'brightness(0)', ok: crt.ok };
 });
