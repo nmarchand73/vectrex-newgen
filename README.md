@@ -1,5 +1,10 @@
 # vectrex-newgen
 
+**Play it: https://nmarchand73.github.io/vectrex-newgen/** ([![CI and GitHub Pages](https://github.com/nmarchand73/vectrex-newgen/actions/workflows/ci.yml/badge.svg)](https://github.com/nmarchand73/vectrex-newgen/actions/workflows/ci.yml))
+
+Every push to `dev` runs the ROM, audio and browser tests (`.github/workflows/ci.yml`) and, when they pass, publishes
+`src/` to GitHub Pages. The tests need Playwright (`npm i playwright`, then `npx playwright install chromium`).
+
 Player for the original Vectrex cartridges, built on a fork of [JSVecX](https://github.com/DrSnuggles/jsvecx)
 (DrSnuggles' player, with the core from [raz0red/jsvecx](https://github.com/raz0red/jsvecx) as `upstream`).
 The original **Scramble** (`Commercial/Scramble_1982`) and **Spike** (`Commercial/Spike_1983`) ROMs, and all
