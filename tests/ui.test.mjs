@@ -21,6 +21,7 @@ test.before(async () => {
   // software WebGL so the CRT pass also runs on machines without a GPU
   browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   page = await browser.newPage({ viewport: { width: 900, height: 1000 } });
+  page.setDefaultTimeout(120000);
   page.on('pageerror', (e) => {
     throw e;
   });
