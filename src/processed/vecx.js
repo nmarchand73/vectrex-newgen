@@ -1991,6 +1991,7 @@ function VecX()
         this.running = true;
 
         var EMU_TIMER = this.osint.EMU_TIMER;
+        var MAX_LAG = 10 * EMU_TIMER;
         var cycles = ( Globals.VECTREX_MHZ / 1000 >> 0 ) * EMU_TIMER;
         var vecx = this;
 
@@ -2036,12 +2037,22 @@ function VecX()
             vecx.vecx_emu.call( vecx, cycles, 0 );
             vecx.count++;
 
+            // Keep real time: the schedule advances by exactly one frame, and when a tick ran late the next one
+            // starts at once, so the game (and its music) catches up instead of slowing down. Only after a long
+            // stall (hidden tab, debugger) does it give up on the lost time.
             var now = new Date().getTime();
+            vecx.nextFrameTime += EMU_TIMER;
             var waitTime = vecx.nextFrameTime - now;
             vecx.extraTime += waitTime;
-            if( waitTime < -EMU_TIMER ) waitTime = -EMU_TIMER;
-
-            vecx.nextFrameTime = now + EMU_TIMER + waitTime;
+            if( waitTime < -MAX_LAG )
+            {
+                vecx.nextFrameTime = now;
+                waitTime = 0;
+            }
+            else if( waitTime < 0 )
+            {
+                waitTime = 0;
+            }
 
             setTimeout( function() { f(); }, waitTime );
         };

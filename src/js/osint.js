@@ -401,7 +401,7 @@ function osint()
         ctx.globalCompositeOperation = "source-over";
         //this.ctx.putImageData(this.imageData, 0, 0);
 
-        if (typeof crt !== "undefined") crt.frame();
+        if (typeof crt !== "undefined") crt.request();
     }
 
     this.init = function( vecx, canv )

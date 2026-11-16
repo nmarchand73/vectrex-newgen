@@ -279,6 +279,21 @@ var crt = (function(){
     my.frame();
   }
 
+  // The emulator asks for a refresh once per emulated frame. The heavy part (upload, blurs, composite) runs at most once per
+  // display refresh, outside the emulation timer, and never takes more than about a third of the processor's time: on a
+  // slow machine the picture gets a lower frame rate, but the game and its music keep their speed.
+  var pending = 0;
+  var nextAllowed = 0;
+  my.request = function () {
+    if (pending || !my.on || performance.now() < nextAllowed) return;
+    pending = requestAnimationFrame(function () {
+      pending = 0;
+      var t0 = performance.now();
+      my.frame();
+      nextAllowed = t0 + (performance.now() - t0) * 3;
+    });
+  };
+
   // one display refresh: upload the vector canvas, blur it three times, composite
   my.frame = function () {
     if (!my.on || !my.ok || !src.width || !src.height) return;
