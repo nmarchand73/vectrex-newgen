@@ -38,6 +38,27 @@ function VecX()
     //static unsigned snd_select;
     this.snd_select = 0;
 
+    /* Direct DAC sound. The VIA port A DAC is routed to the sound line while the mux is enabled
+     * (PB0 = 0) and the mux select is 3 (PB1 = PB2 = 1). Spike plays its speech this way, the
+     * waveform being the timing of the DAC writes. The level is averaged over each output sample
+     * (22050 Hz) and handed to the audio output once per emulated frame. */
+    this.DAC_RATE = 22050;
+    this.dacOut = new Float32Array(2048);
+    this.dacLen = 0;
+    this.dacSum = 0;
+    this.dacN = 0;
+    this.dacPhase = 0;
+    this.dacOpen = 0; /* emulated cycles with the gate open, for tests */
+
+    this.dacFlush = function()
+    {
+        if( this.dacLen > 0 )
+        {
+            if( this.e8910.dac_push ) this.e8910.dac_push( this.dacOut.slice( 0, this.dacLen ) );
+            this.dacLen = 0;
+        }
+    }
+
     /* the via 6522 registers */
 
     //static unsigned via_ora;
@@ -305,7 +326,7 @@ function VecX()
                 if( this.snd_select != 14 )
                 {
                     this.snd_regs[this.snd_select] = this.via_ora;
-                    this.e8910.e8910_write(this.snd_select, this.via_ora);
+                    this.e8910.e8910_write(this.snd_select, this.via_ora, this.dacLen);
                 }
                 break;
             case 0x18:
@@ -1441,6 +1462,21 @@ function VecX()
 
             for( c = 0; c < icycles; c++ )
             {
+                if( ( this.via_orb & 0x07 ) == 0x06 )
+                {
+                    this.dacSum += ( this.via_ora << 24 ) >> 24;
+                    this.dacOpen++;
+                }
+                this.dacN++;
+                this.dacPhase += this.DAC_RATE;
+                if( this.dacPhase >= Globals.VECTREX_MHZ )
+                {
+                    this.dacPhase -= Globals.VECTREX_MHZ;
+                    if( this.dacLen == this.dacOut.length ) this.dacFlush();
+                    this.dacOut[this.dacLen++] = this.dacSum / this.dacN / 128;
+                    this.dacSum = 0;
+                    this.dacN = 0;
+                }
                 //this.via_sstep0();
 //
 // via_sstep0 inline begin
@@ -1923,6 +1959,8 @@ function VecX()
                 this.vectors_draw = tmp;
             }
         }
+
+        this.dacFlush();
     }
 
     this.count = 0;

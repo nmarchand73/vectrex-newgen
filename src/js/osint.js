@@ -24,6 +24,7 @@ function osint()
     this.actImg = [];
     this.lum = 0.5;
     this.gam = 2.2;
+    this.beam = 1; // beam width in canvas pixels (crt.js and toggleQuality() set it)
 
     this.osint_updatescale = function()
     {
@@ -323,6 +324,7 @@ function osint()
         var vectrexColors = Globals.VECTREX_COLORS;
         var ctx = this.ctx;
 
+        ctx.globalCompositeOperation = "source-over";
         ctx.beginPath();
         ctx.lineWidth = 1;
         ctx.strokeStyle = ctx.fillStyle = "rgba(0,0,0,"+ this.lum +")"; //0.5 was quite OK
@@ -359,6 +361,11 @@ function osint()
         // cCOLOR,x0,y0 = draws dot at x,y color
         // lCOLOR,x0,y0,x1,y1 } should combine that again
         this.actImg = []; // clear
+        // the beam adds light: where vectors join or cross the spot is brighter, like on the tube
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        var beam = this.beam;
         // wanted generation in emu loop for later sending that data in compact way
         for( v = 0; v < vector_draw_cnt; v++ )
         {
@@ -374,11 +381,14 @@ function osint()
           col = Math.pow(col, this.gam);
           //ctx.strokeStyle = ctx.fillStyle = "rgba("+this.color_set[ draw.color ]+",1)";
           ctx.strokeStyle = ctx.fillStyle = "rgba(255, 255, 255, "+ col +")";
+          // the spot swells with intensity
+          ctx.lineWidth = beam * (0.7 + 0.6 * col);
 
           //this.actImg.push(draw.color+","+draw.x0+","+draw.y0+","+draw.x1+","+draw.y1);
           if (draw.x0 === draw.x1 && draw.y0 === draw.y1) {
             // dot
-            ctx.fillRect(draw.x0/this.scl_factor,draw.y0/this.scl_factor,1,1);
+            ctx.arc(draw.x0/this.scl_factor, draw.y0/this.scl_factor, ctx.lineWidth * 0.75, 0, 6.2832);
+            ctx.fill();
             this.actImg.push(draw.color+","+draw.x0+","+draw.y0);
           } else {
             // line
@@ -390,8 +400,10 @@ function osint()
           ctx.stroke();
         }
 
+        ctx.globalCompositeOperation = "source-over";
         //this.ctx.putImageData(this.imageData, 0, 0);
 
+        if (typeof crt !== "undefined") crt.frame();
     }
 
     this.init = function( vecx, canv )
@@ -407,7 +419,7 @@ function osint()
 
         // Graphics
         this.canvas = canv; // DrSnuggles: no more fixed DOM names
-        this.ctx = this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext('2d', { alpha: false });
         //this.imageData = this.ctx.getImageData(0, 0, this.screen_x, this.screen_y);
         //this.data = this.imageData.data;
 

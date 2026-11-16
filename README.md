@@ -1,3 +1,56 @@
+# vectrex-newgen
+
+Player for the original Vectrex cartridges, built on a fork of [JSVecX](https://github.com/DrSnuggles/jsvecx)
+(DrSnuggles' player, with the core from [raz0red/jsvecx](https://github.com/raz0red/jsvecx) as `upstream`).
+The original **Scramble** (`Commercial/Scramble_1982`) and **Spike** (`Commercial/Spike_1983`) ROMs, and all
+the other bundled cartridges, are simply read and played. Two changes to the emulator, both needed for sound:
+
+- **Direct DAC sound.** Spike's speech ("Eek, help, Spike!", "Oh no, Molly!") is not made by the AY chip. The
+  game writes the VIA DAC and routes it to the sound line (port B bit 0 = 0, bits 1 and 2 = 1), flipping between
+  four levels about 8000 times a second. `src/processed/vecx.js` (and `preprocess/`) now samples that path every
+  cycle and hands 22050 Hz samples to the audio output once per frame.
+- **Cycle accurate sound chip writes.** Every AY register write carries its sample offset inside the frame and the
+  AudioWorklet replays it there (`src/js/audioWorkletWrapper.js`), so games that play samples through the AY volume
+  registers work too, instead of all the writes of a frame landing at once. The Sound button also really mutes now.
+
+- **CRT look** (`src/js/crt.js`, on by default, **CRT** tile and **CRT glow** slider in the menu). The vector canvas
+  is drawn additively with a beam that swells with intensity, then a WebGL pass adds halation in three radii, a
+  slightly domed glass, darker corners, a faint reflection, lifted blacks and a little phosphor sparkle. There are
+  deliberately no scanlines or shadow mask: the Vectrex tube is a vector display and has neither. The **CRT instability** slider adds analog
+  wobble: slow deflection drift and line-by-line shimmer, the image breathing with the load on the high voltage, a
+  rolling hum band, and an occasional brief sideways tear (0 switches all of it off).
+
+The cartridge list shows the original cartridges only (the **All** chip adds homebrews, hacks and demos), ranked
+in the `#` column. No per-title sales figures were ever published, so the ranking is a proxy: built-in game first,
+then by how common each cartridge still is (rarity guides and collector listings). See `src/js/popularity.js`.
+Each original comes with a short description, genre, player count and origin (arcade port or made for the Vectrex) in
+`src/js/cartridges.js`; the search box looks in those descriptions too.
+
+```
+npm run serve        # http://127.0.0.1:8080/dev.html
+```
+
+Direct links: `dev.html?rom=Commercial/Scramble_1982`, `dev.html?rom=Commercial/Spike_1983`.
+Keys: arrows + A S D F (buttons 1 to 4), ESC or right click for the cartridge list.
+
+## Tests
+
+```
+npm run test:roms    # headless: Mine Storm, Scramble, Spike and 5 more ROMs, render fingerprints in tests/baseline.json
+npm run test:ui      # Playwright golden path: pick Scramble, then Spike, then back, without reloading
+npm run test:audio   # the real AudioWorklet processor in a stub scope: DAC mixing, timed AY writes, mute
+npm run smoketest    # all three
+node harness/audioscan.mjs   # runs every bundled ROM and lists the ones that use the DAC or sample-rate AY writes
+```
+
+- `harness/` runs the unmodified core in Node (only the canvas renderer and WebAudio chip are stubbed).
+  `node harness/snap.mjs <rom> <frames> out.png --press=4@100-110` saves a screenshot of any ROM.
+- `UPDATE_BASELINE=1 npm run test:roms` rewrites the fingerprints after an intentional core change.
+- The UI test needs Playwright and its browsers (`npx playwright install`). Set `PLAYWRIGHT_BROWSERS_PATH`
+  if the browsers are cached elsewhere.
+
+---
+
 # JSVecX
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)

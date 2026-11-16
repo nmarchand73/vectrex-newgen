@@ -51,6 +51,7 @@ function switchRom(rom) {
 
   // show quicklink
   quicklink.title = "https://DrSnuggles.github.io/jsvecx?rom="+ rom;
+  if (typeof modernUI !== "undefined") modernUI.nowPlaying(rom);
 }
 function loadRom(url) {
   lastURL = url;
@@ -326,6 +327,7 @@ function doinit() {
   Globals.SCREEN_X_DEFAULT = vecscr.width;
   Globals.SCREEN_Y_DEFAULT = vecscr.height;
   vecx.main( vecscr );
+  crt.init( vecscr );
 
   // poll vecx status
   setInterval(function(){
@@ -402,6 +404,9 @@ function toggleAA() {
     stat.innerText = "AntiAlias turned on.";
   }
 }
+function toggleCRT() {
+  stat.innerText = crt.toggle() ? "CRT look turned on." : (crt.ok ? "CRT look turned off." : "CRT look needs WebGL.");
+}
 function toggleGP() {
   if ( input.gamepads.toggleGP() ) {
     stat.innerText = "Gamepad turned on.";
@@ -468,9 +473,15 @@ function toggleQuality(x, y) {
     y = 410;
   }
   */
+  // one canvas pixel per device pixel, so the beam stays sharp on retina screens
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  x = Math.round(x * dpr);
+  y = Math.round(y * dpr);
   Globals.SCREEN_X_DEFAULT = vecx.osint.screen_x = vecscr.width = x;
   Globals.SCREEN_Y_DEFAULT = vecx.osint.screen_y = vecscr.height = y;
   vecx.osint.init(vecx, vecscr);
+  crt.applyBeam();
+  crt.frame();
   //vecx.osint.osint_updatescale();
   //vecx.osint.osint_clearscreen();
   stat.innerText = x + " x " + y;
@@ -558,10 +569,17 @@ function resizer() {
   wrapper.style.top = ydiff/2 +'px';
 
   // size and center the menu / notice
-  menu.style.width = notice.style.width = overlay.clientWidth * 0.8 +'px';
-  menu.style.height = notice.style.height = overlay.clientHeight * 0.8 +'px';
-  menu.style.left = notice.style.left = overlay.clientWidth * 0.1 +'px';
-  menu.style.top = notice.style.top = overlay.clientHeight * 0.1 +'px';
+  notice.style.width = overlay.clientWidth * 0.8 +'px';
+  notice.style.height = overlay.clientHeight * 0.8 +'px';
+  notice.style.left = overlay.clientWidth * 0.1 +'px';
+  notice.style.top = overlay.clientHeight * 0.1 +'px';
+  if (!menu.classList.contains('modern')) {
+    // the modern menu is a full screen sheet and sizes itself in CSS
+    menu.style.width = notice.style.width;
+    menu.style.height = notice.style.height;
+    menu.style.left = notice.style.left;
+    menu.style.top = notice.style.top;
+  }
 
   // auto toggle quality
   toggleQuality(vecscr.clientWidth,vecscr.clientHeight);
@@ -621,7 +639,7 @@ function printScreen() {
   a.setAttribute('download', 'JSVecX_'+d+'.png');
   var dataURL = vecscr.toDataURL('image/png');
   var url = dataURL.replace(/^data:image\/png/,'data:application/octet-stream');
-  vecx.osint.canvas.toBlob(function(blob) {
+  (crt.shot() || vecx.osint.canvas).toBlob(function(blob) {
     var url = URL.createObjectURL(blob);
     a.setAttribute('href', url);
     a.click();

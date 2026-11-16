@@ -24,6 +24,8 @@ var input = (function() {
     ];
     var keyHandler = function(e) {
       //console.log( e );
+      // typing in the cartridge search must not drive the joystick (key releases still go through)
+      if (e.type == "keydown" && e.target && e.target.id === "search") return;
       if (typeof vecx !== "undefined") {
         var handled = true;
         var held = (e.type == "keydown"); // which event keyup or -down
@@ -47,6 +49,11 @@ var input = (function() {
             break;
           case my.keys1[5]: // s
             vecx.button(controller, 1, held);
+            break;
+          case "Space": // fire, same as button 4 (f): laser in Scramble, fire in Spike
+            vecx.button(controller, 3, held);
+            // no page scroll / no click on a focused button while playing, but keep Space usable in the menu
+            if (e.preventDefault && !document.body.classList.contains("menu-open")) e.preventDefault();
             break;
           case my.keys1[6]: // d
             vecx.button(controller, 2, held);

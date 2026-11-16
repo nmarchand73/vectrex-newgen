@@ -4,7 +4,12 @@
   "description": "JSVecX: JavaScript port of VecX",
   "main": "index.js",
   "scripts": {
-    "deploy": "git subtree push --prefix deploy origin gh-pages"
+    "deploy": "git subtree push --prefix deploy origin gh-pages",
+    "serve": "node tests/serve.mjs",
+    "test:roms": "node --test tests/roms.test.mjs",
+    "test:ui": "node --test tests/ui.test.mjs",
+    "test:audio": "node --test tests/audio.test.mjs",
+    "smoketest": "npm run test:roms && npm run test:audio && npm run test:ui"
   },
   "author": "DrSnuggles",
   "license": "GPL3",

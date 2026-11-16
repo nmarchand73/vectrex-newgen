@@ -2,3 +2,5 @@ node_modules
 */roms/test
 */_new*
 *.webp
+tests/out/
+tests/baseline.local.json
